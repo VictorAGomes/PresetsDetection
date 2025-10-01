@@ -1,8 +1,6 @@
 import cv2
 import os
 import logging
-from ultralytics import YOLO
-from sort import Sort
 import numpy as np
 
 logging.basicConfig(
@@ -56,9 +54,6 @@ def identificar_preset_features(frame, orb, descritores_presets):
         return melhor_preset, max_matches
     return None, max_matches
 
-# Carregar modelo YOLO pré-treinado para detecção de carros
-modelo_yolo = YOLO('yolov8n.pt')  # Use yolov8n.pt para testes rápidos, ou yolov8s.pt/yolov8m.pt para mais precisão
-
 def main():
     orb_detector, descritores_referencia = analisar_presets_referencia(PASTA_PRESETS)
     if not descritores_referencia:
@@ -82,11 +77,6 @@ def main():
     contador_confirmacao = 0
     frame_anterior_cinza = None
     frame_count = 0
-    nomes_presets = [f"preset {i+1}" for i in range(4)]
-    tempo_presets = {nome: 0.0 for nome in nomes_presets}
-    contagem_carros_presets = {nome: 0 for nome in nomes_presets}
-    tracker = Sort()
-    carros_ids_presets = {}
 
     while True:
         ret, frame = cap.read()
@@ -117,41 +107,6 @@ def main():
             if contador_confirmacao >= FRAMES_PARA_CONFIRMACAO and identificado:
                 preset_atual = preset_candidato
                 estado_camera = "PRESET_DEFINIDO"
-        if estado_camera == "PRESET_DEFINIDO" and preset_atual:
-            nome_preset_exibicao = str(preset_atual)
-            # Garante que o preset está no dicionário
-            if nome_preset_exibicao not in contagem_carros_presets:
-                contagem_carros_presets[nome_preset_exibicao] = 0
-
-            # --- Contagem de carros usando YOLO ---
-            resultados = modelo_yolo(frame)
-            carros = [det for det in resultados[0].boxes.cls if int(det) == 2]
-            num_carros = len(carros)
-            contagem_carros_presets[nome_preset_exibicao] += num_carros
-
-            # Adicione no início do seu main()
-            if nome_preset_exibicao not in carros_ids_presets:
-                carros_ids_presets[nome_preset_exibicao] = set()
-
-            # Pegue as detecções do YOLO (classe 2 = carro)
-            boxes = []
-            for box, cls in zip(resultados[0].boxes.xyxy.cpu().numpy(), resultados[0].boxes.cls.cpu().numpy()):
-                if int(cls) == 2:
-                    x1, y1, x2, y2 = box
-                    boxes.append([x1, y1, x2, y2, 1.0])  # 1.0 = score
-
-            # Atualize o tracker
-            tracks = tracker.update(np.array(boxes)) if boxes else []
-
-            # Adicione IDs únicos ao set do preset atual
-            for track in tracks:
-                track_id = int(track[4])
-                carros_ids_presets[nome_preset_exibicao].add(track_id)
-
-            num_carros = len(carros_ids_presets[nome_preset_exibicao])
-
-            texto_carros = f"Carros únicos detectados: {num_carros}"
-            cv2.putText(frame, texto_carros, (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
 
         texto_status = (
             f"PRESET ATUAL: {preset_atual} (ESTAVEL)" if estado_camera == "PRESET_DEFINIDO"
@@ -160,13 +115,6 @@ def main():
         )
         cor_status = (0, 255, 0) if estado_camera == "PRESET_DEFINIDO" else (0, 0, 255)
         cv2.putText(frame, texto_status, (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, cor_status, 2)
-
-        # Exibe a contagem acumulada de carros por preset
-        if estado_camera == "PRESET_DEFINIDO" and preset_atual:
-            nome_preset_exibicao = str(preset_atual)
-            total_carros = contagem_carros_presets.get(nome_preset_exibicao, 0)
-            texto_contador = f"Total carros {nome_preset_exibicao}: {total_carros}"
-            cv2.putText(frame, texto_contador, (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
 
         cv2.imshow("Identificador de Preset - Tempo Real", frame)
         out.write(frame)
