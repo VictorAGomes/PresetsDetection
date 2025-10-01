@@ -10,7 +10,7 @@ logging.basicConfig(
 )
 
 PASTA_PRESETS = 'presets_mid'
-VIDEO_SOURCE = "video_2min.mp4"
+VIDEO_SOURCE = "video_1min.mp4"
 NUM_FEATURES = 1000
 GOOD_MATCH_RATIO = 0.80
 MIN_GOOD_MATCHES = 10
