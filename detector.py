@@ -9,7 +9,7 @@ logging.basicConfig(
     datefmt='%H:%M:%S'
 )
 
-PASTA_PRESETS = 'presets_mid'
+PASTA_PRESETS = 'presets'
 VIDEO_SOURCE = "video_1min.mp4"
 NUM_FEATURES = 1000
 GOOD_MATCH_RATIO = 0.80
@@ -17,7 +17,7 @@ MIN_GOOD_MATCHES = 10
 FRAMES_PARA_CONFIRMACAO = 2
 LARGURA_PROCESSAMENTO = 640
 ALTURA_PROCESSAMENTO = 480
-
+ 
 def detectar_movimento_simples(frame_anterior_cinza, frame_atual_cinza, limiar=0.15):
     if frame_anterior_cinza is None:
         return False
